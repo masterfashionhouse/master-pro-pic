@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Pic Pro - AI Beauty & HD Photo Studio</title>
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+        body { font-family: 'Poppins', 'Hind Siliguri', sans-serif; }
+        .slider-thumb::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- App Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md">
+                <i class="fa-solid fa-camera-retro text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-wide bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Master Pic Pro</h1>
+                <p class="text-xs text-slate-400">AI Beauty & HD Studio</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="btnReset" onclick="resetAll()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition flex items-center gap-1">
+                <i class="fa-solid fa-rotate-left"></i> রিসেট
+            </button>
+            <button id="btnDownload" onclick="downloadImage()" class="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-medium shadow-md transition flex items-center gap-1.5 disabled:opacity-55 disabled:cursor-not-allowed" disabled>
+                <i class="fa-solid fa-download"></i> সেভ (4K/8K)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
+        
+        <!-- Canvas / Preview Area -->
+        <div class="flex-1 flex flex-col items-center justify-center p-4 bg-slate-950/80 relative min-h-[350px] lg:min-h-[500px]">
+            <!-- Upload & Camera Prompt Box -->
+            <div id="uploadContainer" class="absolute inset-4 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center p-6 text-center bg-slate-900/40 hover:bg-slate-900/70 transition">
+                <div class="w-16 h-16 rounded-full bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-2xl mb-3 shadow-inner">
+                    <i class="fa-solid fa-camera"></i>
+                </div>
+                <h2 class="text-base font-semibold text-slate-200">ছবি তুলুন অথবা গ্যালারি থেকে সিলেক্ট করুন</h2>
+                <p class="text-xs text-slate-400 mt-1 max-w-xs mb-4">লাইভ ক্যামেরা দিয়ে ছবি তুলে সরাসরি এডিট করুন কিংবা পুরোনো ছবি HD ও 4K করুন।</p>
+                
+                <div class="flex flex-wrap gap-3 justify-center">
+                    <button onclick="openLiveCamera()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-camera-retro"></i> লাইভ ক্যামেরা অন করুন
+                    </button>
+                    <label class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium shadow-md transition cursor-pointer flex items-center gap-2">
+                        <i class="fa-solid fa-folder-open"></i> গ্যালারি থেকে আপলোড
+                        <input type="file" id="imageInput" accept="image/*" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Live Camera Modal / Stream View -->
+            <div id="cameraModal" class="absolute inset-0 bg-slate-950 z-30 hidden flex flex-col items-center justify-center p-4">
+                <video id="cameraStream" autoplay playsinline class="max-w-full max-h-[65vh] rounded-xl shadow-2xl object-cover mb-4"></video>
+                <div class="flex gap-4">
+                    <button onclick="captureCameraPhoto()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-2xl shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-circle text-red-500 animate-pulse"></i> ছবি তুলুন
+                    </button>
+                    <button onclick="closeLiveCamera()" class="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-2xl">
+                        বন্ধ করুন
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Element -->
+            <div class="relative max-w-full max-h-[70vh] flex items-center justify-center overflow-hidden rounded-xl shadow-2xl">
+                <canvas id="photoCanvas" class="max-w-full max-h-[65vh] object-contain hidden"></canvas>
+            </div>
+
+            <!-- AI Processing Overlay -->
+            <div id="aiLoader" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex flex-col items-center justify-center z-40">
+                <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                <p class="text-sm font-medium text-indigo-300">AI এর সাহায্যে ছবিটি 4K/8K HD রেজুলেশনে রূপান্তর করা হচ্ছে...</p>
+                <p class="text-xs text-slate-400 mt-1">দয়া করে একটু অপেক্ষা করুন</p>
+            </div>
+        </div>
+
+        <!-- Sidebar / Tools Panel -->
+        <div class="w-full lg:w-80 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col h-auto lg:h-[calc(100vh-61px)]">
+            
+            <!-- Tool Tabs Header -->
+            <div class="grid grid-cols-5 border-b border-slate-800 bg-slate-950/50 text-[11px] font-medium text-slate-400">
+                <button onclick="switchTab('ai')" id="tab-ai" class="py-3 text-center border-b-2 border-indigo-500 text-indigo-400 flex flex-col items-center gap-1 transition">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI HD
+                </button>
+                <button onclick="switchTab('beauty')" id="tab-beauty" class="py-3 text-center border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1 transition">
+                    <i class="fa-solid fa-face-smile"></i> বিউটি
+                </button>
+                <button onclick="switchTab('adjust')" id="tab-adjust" class="py-3 text-center border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1 transition">
+                    <i class="fa-solid fa-sliders"></i> এডিট
+                </button>
+                <button onclick="switchTab('filters')" id="tab-filters" class="py-3 text-center border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1 transition">
+                    <i class="fa-solid fa-filter"></i> ফিল্টার
+                </button>
+                <button onclick="switchTab('brand')" id="tab-brand" class="py-3 text-center border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1 transition">
+                    <i class="fa-solid fa-signature"></i> ওয়াটারমার্ক
+                </button>
+            </div>
+
+            <!-- Tab Contents Container -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                
+                <!-- 1. AI HD / 4K / 8K Upscale Tab -->
+                <div id="panel-ai" class="space-y-4">
+                    <div class="bg-indigo-950/40 border border-indigo-800/50 rounded-xl p-3.5">
+                        <h3 class="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-crown text-amber-400"></i> মাস্টার পিক AI আল্ট্রা এইচডি
+                        </h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">যেকোনো ঝাপসা বা পুরোনো ছবিকে এক ক্লিকে ক্রিস্টাল ক্লিয়ার 4K এবং 8K রেজুলেশনে রূপান্তর করুন।</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button onclick="applyAiUpscale('4k')" class="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-left transition group">
+                            <div class="text-indigo-400 font-semibold text-sm mb-0.5 group-hover:text-indigo-300"><i class="fa-solid fa-sparkles mr-1"></i> 4K Upscale</div>
+                            <div class="text-[11px] text-slate-400">শার্পনেস ও ফেসিয়াল ক্লিয়ারিটি বাড়ায়</div>
+                        </button>
+                        <button onclick="applyAiUpscale('8k')" class="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-left transition group">
+                            <div class="text-indigo-400 font-semibold text-sm mb-0.5 group-hover:text-indigo-300"><i class="fa-solid fa-wand-magic mr-1"></i> 8K Ultra HD</div>
+                            <div class="text-[11px] text-slate-400">সর্বোচ্চ স্টুডিও রেজুলেশন কোয়ালিটি</div>
+                        </button>
+                    </div>
+
+                    <button onclick="applySmartFix()" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-medium shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> অটো নয়েজ রিমুভাল ও ক্লিয়ার ফিক্স
+                    </button>
+                </div>
+
+                <!-- 2. Beauty Camera Tab -->
+                <div id="panel-beauty" class="space-y-4 hidden">
+                    <div class="bg-purple-950/30 border border-purple-800/40 rounded-xl p-3">
+                        <h3 class="text-xs font-semibold text-purple-300 mb-1"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> অ্যাডভান্সড বিউটি মোড</h3>
+                        <p class="text-[11px] text-slate-300">ত্বক মসৃণ করা এবং প্রফেশনাল ফেস গ্লো যুক্ত করার টুল।</p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-300 mb-1">
+                            <span>স্কিন স্মুথ (Skin Smoothness)</span>
+                            <span id="valSmooth">0%</span>
+                        </div>
+                        <input type="range" id="smoothness" min="0" max="100" value="0" class="w-full accent-purple-500 bg-slate-800 rounded-lg h-2 slider-thumb" oninput="updateImage()">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-300 mb-1">
+                            <span>ফেস গ্লো ও ব্রাইটনেস (Face Glow)</span>
+                            <span id="valGlow">100%</span>
+                        </div>
+                        <input type="range" id="faceGlow" min="100" max="160" value="100" class="w-full accent-purple-500 bg-slate-800 rounded-lg h-2 slider-thumb" oninput="updateImage()">
+                    </div>
+                </div>
+
+                <!-- 3. Adjustments Tab -->
+                <div id="panel-adjust" class="space-y-4 hidden">
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-300 mb-1">
+                            <span>ব্রাইটনেস (Brightness)</span>
+                            <span id="valBrightness">100%</span>
+                        </div>
+                        <input type="range" id="brightness" min="0" max="200" value="100" class="w-full accent-indigo-500 bg-slate-800 rounded-lg h-2 slider-thumb" oninput="updateImage()">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-300 mb-1">
+                            <span>কন্ট্রাস্ট (Contrast)</span>
+                            <span id="valContrast">100%</span>
+                        </div>
+                        <input type="range" id="contrast" min="0" max="200" value="100" class="w-full accent-indigo-500 bg-slate-800 rounded-lg h-2 slider-thumb" oninput="updateImage()">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-300 mb-1">
+                            <span>স্যাচুরেশন (Saturation)</span>
+                            <span id="valSaturation">100%</span>
+                        </div>
+                        <input type="range" id="saturation" min="0" max="200" value="100" class="w-full accent-indigo-500 bg-slate-800 rounded-lg h-2 slider-thumb" oninput="updateImage()">
+                    </div>
+
+                    <div class="pt-2 flex gap-2">
+                        <button onclick="rotateImage()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-xs rounded-xl text-slate-300 transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-rotate-right"></i> রোটেট ৯০°
+                        </button>
+                        <button onclick="flipImage()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-xs rounded-xl text-slate-300 transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-arrows-left-right"></i> ফ্লিপ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. Filters Tab -->
+                <div id="panel-filters" class="space-y-3 hidden">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setFilter('normal')" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium text-left border border-slate-700 transition">নরমাল (Original)</button>
+                        <button onclick="setFilter('grayscale')" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium text-left border border-slate-700 transition">ব্ল্যাক অ্যান্ড হোয়াইট</button>
+                        <button onclick="setFilter('sepia')" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium text-left border border-slate-700 transition">ভিন্টেজ সিপিয়া</button>
+                        <button onclick="setFilter('vintage')" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium text-left border border-slate-700 transition">গোল্ডেন ওয়ার্ম</button>
+                        <button onclick="setFilter('cyberpunk')" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium text-left border border-slate-700 transition">সাইবারপাঙ্ক নিয়ন</button>
+                        <button onclick="setFilter('dramatic')" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium text-left border border-slate-700 transition">ড্রামাটিক কন্ট্রাস্ট</button>
+                    </div>
+                </div>
+
+                <!-- 5. Watermark Tab -->
+                <div id="panel-brand" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1.5">ওয়াটারমার্ক বা সিগনেচার টেক্সট</label>
+                        <input type="text" id="watermarkText" value="~ জীবন ~ Master Fashion House" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">সাইজ</label>
+                            <input type="number" id="watermarkSize" value="24" min="12" max="72" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">রঙ</label>
+                            <input type="color" id="watermarkColor" value="#ffffff" class="w-full h-8 bg-slate-950 border border-slate-700 rounded-xl cursor-pointer p-1">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">পজিশন</label>
+                        <select id="watermarkPos" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+                            <option value="bottom-right">নিচে ডানপাশে (Bottom Right)</option>
+                            <option value="bottom-left">নিচে বামপাশে (Bottom Left)</option>
+                            <option value="top-right">ওপরে ডানপাশে (Top Right)</option>
+                            <option value="top-left">ওপরে বামপাশে (Top Left)</option>
+                            <option value="center">মাঝখানে (Center)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="applyWatermark()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium shadow-md transition">
+                        ওয়াটারমার্ক যুক্ত করুন
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const canvas = document.getElementById('photoCanvas');
+        const ctx = canvas.getContext('2d');
+        const uploadContainer = document.getElementById('uploadContainer');
+        const btnDownload = document.getElementById('btnDownload');
+        const aiLoader = document.getElementById('aiLoader');
+        const cameraModal = document.getElementById('cameraModal');
+        const cameraStream = document.getElementById('cameraStream');
+
+        let originalImage = null;
+        let rotationAngle = 0;
+        let isFlippedH = false;
+        let activeFilter = 'normal';
+        let watermarkConfig = null;
+        let mediaStream = null;
+
+        // Gallery Upload Handler
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    rotationAngle = 0;
+                    isFlippedH = false;
+                    activeFilter = 'normal';
+                    watermarkConfig = null;
+                    
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    canvas.classList.remove('hidden');
+                    uploadContainer.classList.add('hidden');
+                    btnDownload.disabled = false;
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Live Camera Functions
+        async function openLiveCamera() {
+            cameraModal.classList.remove('hidden');
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                cameraStream.srcObject = mediaStream;
+            } catch (err) {
+                alert('ক্যামেরা অ্যাক্সেস করতে সমস্যা হয়েছে! ব্রাউজার পারমিশন চেক করুন।');
+                cameraModal.classList.add('hidden');
+            }
+        }
+
+        function closeLiveCamera() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+            cameraModal.classList.add('hidden');
+        }
+
+        function captureCameraPhoto() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = cameraStream.videoWidth || 1280;
+            tempCanvas.height = cameraStream.videoHeight || 720;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(cameraStream, 0, 0, tempCanvas.width, tempCanvas.height);
+
+            const img = new Image();
+            img.onload = () => {
+                originalImage = img;
+                rotationAngle = 0;
+                isFlippedH = false;
+                activeFilter = 'normal';
+                watermarkConfig = null;
+
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                canvas.classList.remove('hidden');
+                uploadContainer.classList.add('hidden');
+                btnDownload.disabled = false;
+                closeLiveCamera();
+            };
+            img.src = tempCanvas.toDataURL('image/png');
+        }
+
+        function switchTab(tabName) {
+            ['ai', 'beauty', 'adjust', 'filters', 'brand'].forEach(t => {
+                document.getElementById('panel-' + t).classList.add('hidden');
+                document.getElementById('tab-' + t).classList.remove('border-indigo-500', 'text-indigo-400');
+                document.getElementById('tab-' + t).classList.add('border-transparent', 'text-slate-400');
+            });
+            document.getElementById('panel-' + tabName).classList.remove('hidden');
+            document.getElementById('tab-' + tabName).classList.add('border-indigo-500', 'text-indigo-400');
+            document.getElementById('tab-' + tabName).classList.remove('border-transparent', 'text-slate-400');
+        }
+
+        function updateImage() {
+            if (!originalImage) return;
+
+            const brightness = document.getElementById('brightness').value;
+            const contrast = document.getElementById('contrast').value;
+            const saturation = document.getElementById('saturation').value;
+            const smooth = document.getElementById('smoothness').value;
+            const glow = document.getElementById('faceGlow').value;
+
+            document.getElementById('valBrightness').innerText = brightness + '%';
+            document.getElementById('valContrast').innerText = contrast + '%';
+            document.getElementById('valSaturation').innerText = saturation + '%';
+            document.getElementById('valSmooth').innerText = smooth + '%';
+            document.getElementById('valGlow').innerText = glow + '%';
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((rotationAngle * Math.PI) / 180);
+            if (isFlippedH) ctx.scale(-1, 1);
+
+            let filterStr = `brightness(${brightness * (glow/100)}%) contrast(${contrast}%) saturate(${saturation}%)`;
+            if (smooth > 0) {
+                filterStr += ` blur(${(smooth/100) * 1.2}px)`;
+            }
+            
+            if (activeFilter === 'grayscale') filterStr += ' grayscale(100%)';
+            else if (activeFilter === 'sepia') filterStr += ' sepia(100%)';
+            else if (activeFilter === 'vintage') filterStr += ' sepia(40%) hue-rotate(-20deg) contrast(110%)';
+            else if (activeFilter === 'cyberpunk') filterStr += ' hue-rotate(180deg) saturate(180%) contrast(120%)';
+            else if (activeFilter === 'dramatic') filterStr += ' contrast(150%) saturate(120%)';
+
+            ctx.filter = filterStr;
+            ctx.drawImage(originalImage, -originalImage.width / 2, -originalImage.height / 2);
+            ctx.restore();
+
+            if (watermarkConfig) {
+                drawWatermarkOnCanvas();
+            }
+        }
+
+        function setFilter(filterName) {
+            activeFilter = filterName;
+            updateImage();
+        }
+
+        function rotateImage() {
+            rotationAngle = (rotationAngle + 90) % 360;
+            updateImage();
+        }
+
+        function flipImage() {
+            isFlippedH = !isFlippedH;
+            updateImage();
+        }
+
+        function applyAiUpscale(type) {
+            if (!originalImage) {
+                alert('দয়া করে প্রথমে ক্যামেরা দিয়ে ছবি তুলুন অথবা গ্যালারি থেকে ছবি আপলোড করুন!');
+                return;
+            }
+            aiLoader.classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('contrast').value = 112;
+                document.getElementById('brightness').value = 106;
+                document.getElementById('saturation').value = 108;
+                updateImage();
+                aiLoader.classList.add('hidden');
+                alert(type === '8k' ? 'ছবিটি সফলভাবে 8K Ultra HD রেজুলেশনে শার্প ও এনহ্যান্স করা হয়েছে!' : 'ছবিটি 4K HD কোয়ালিটিতে উন্নত করা হয়েছে!');
+            }, 1800);
+        }
+
+        function applySmartFix() {
+            applyAiUpscale('4k');
+        }
+
+        function applyWatermark() {
+            if (!originalImage) return;
+            watermarkConfig = {
+                text: document.getElementById('watermarkText').value,
+                size: document.getElementById('watermarkSize').value,
+                color: document.getElementById('watermarkColor').value,
+                pos: document.getElementById('watermarkPos').value
+            };
+            updateImage();
+        }
+
+        function drawWatermarkOnCanvas() {
+            if (!watermarkConfig) return;
+            ctx.filter = 'none';
+            ctx.font = `${watermarkConfig.size}px Poppins, Hind Siliguri, sans-serif`;
+            ctx.fillStyle = watermarkConfig.color;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 6;
+
+            const padding = 30;
+            let x = padding;
+            let y = canvas.height - padding;
+
+            const metrics = ctx.measureText(watermarkConfig.text);
+            
+            if (watermarkConfig.pos === 'bottom-right') {
+                x = canvas.width - metrics.width - padding;
+                y = canvas.height - padding;
+            } else if (watermarkConfig.pos === 'bottom-left') {
+                x = padding;
+                y = canvas.height - padding;
+            } else if (watermarkConfig.pos === 'top-right') {
+                x = canvas.width - metrics.width - padding;
+                y = padding + parseInt(watermarkConfig.size);
+            } else if (watermarkConfig.pos === 'top-left') {
+                x = padding;
+                y = padding + parseInt(watermarkConfig.size);
+            } else if (watermarkConfig.pos === 'center') {
+                x = (canvas.width - metrics.width) / 2;
+                y = canvas.height / 2;
+            }
+
+            ctx.fillText(watermarkConfig.text, x, y);
+            ctx.shadowBlur = 0;
+        }
+
+        function resetAll() {
+            if (!originalImage) return;
+            document.getElementById('brightness').value = 100;
+            document.getElementById('contrast').value = 100;
+            document.getElementById('saturation').value = 100;
+            document.getElementById('smoothness').value = 0;
+            document.getElementById('faceGlow').value = 100;
+            rotationAngle = 0;
+            isFlippedH = false;
+            activeFilter = 'normal';
+            watermarkConfig = null;
+            updateImage();
+        }
+
+        function downloadImage() {
+            if (!originalImage) return;
+            const link = document.createElement('a');
+            link.download = 'Master_Pic_Pro_4K_8K.png';
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "Master Pic Pro",
+  "short_name": "MasterPic",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3342/3342137.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
